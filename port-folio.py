@@ -63,15 +63,12 @@ class Portfolio:
 
     def remove_position(self, list_number):
         """This is a test."""
-
-        self.db.execute(
-            f"DELETE FROM PRICES WHERE holding = (SELECT holding FROM POSITIONS LIMIT 1 OFFSET {list_number-1});"
-        )
-
         self.db.execute(
             f"DELETE FROM POSITIONS WHERE id = (SELECT id FROM POSITIONS LIMIT 1 OFFSET {list_number-1});"
         )
-
+        self.db.execute(
+            "DELETE FROM PRICES WHERE holding NOT IN (SELECT holding FROM POSITIONS);"
+        )
         self.db.commit()
 
     def create_current_price(self, holding, current_price):
@@ -267,6 +264,7 @@ class Portfolio:
                 self.print_single_holding_overview(holding)
                 level_2_option = input("Which would you like to delete? ")
                 self.remove_position(int(level_2_option))
+                # self.remove_price(int(level_2_option))
 
             elif level_1_option == "c":
                 print("test")
