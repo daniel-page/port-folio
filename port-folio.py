@@ -63,9 +63,15 @@ class Portfolio:
 
     def remove_position(self, list_number):
         """This is a test."""
+
         self.db.execute(
-            f"DELETE FROM POSITIONS WHERE id = (SELECT id FROM POSITIONS LIMIT 1 OFFSET {int(list_number-1)});"
+            f"DELETE FROM PRICES WHERE holding = (SELECT holding FROM POSITIONS LIMIT 1 OFFSET {list_number-1});"
         )
+
+        self.db.execute(
+            f"DELETE FROM POSITIONS WHERE id = (SELECT id FROM POSITIONS LIMIT 1 OFFSET {list_number-1});"
+        )
+
         self.db.commit()
 
     def create_current_price(self, holding, current_price):
@@ -88,12 +94,12 @@ class Portfolio:
 
     def create_overview_as_table(self, sql_data):
         """_summary_"""
-
         formatted_data = []
         counter = 1
         for item in sql_data:
             identifier = f"[{str(counter)}]"
             holding = item[0]
+
             quantity = f"{item[1]:.2f}".rjust(8)
             current_price = "$" + f"{item[2]:.2f}".rjust(8)
             value = "$" + f"{item[3]:.2f}".rjust(8)
@@ -135,9 +141,7 @@ class Portfolio:
         ).fetchall()
 
         # What if price not there
-
         if len(holdings_groups) != 0:
-
             table = self.create_overview_as_table(holdings_groups)
 
             print()
@@ -241,7 +245,7 @@ class Portfolio:
               \___________________/                          
                 """
             )
-            print("Version 0.1")
+            print("Version 0.2")
 
             self.print_overview_table()
 
@@ -264,6 +268,10 @@ class Portfolio:
                 level_2_option = input("Which would you like to delete? ")
                 self.remove_position(int(level_2_option))
 
+            elif level_1_option == "c":
+                print("test")
+                while True:
+                    ...
             elif level_1_option == "a":
                 holding = input("Name: ")
                 quantity = input("Quantity: ")
