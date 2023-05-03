@@ -2,10 +2,9 @@
 
 Port-Folio
 
-An application for tracking investments.
+A command line application for tracking investments.
 
 """
-
 
 # TODO:
 # Strip whitespace on text entry, if nothing is entered
@@ -13,7 +12,11 @@ An application for tracking investments.
 # Add cost basis
 # List order
 # Stocks splits etc
-# Add option for deleting an entire holding
+# Add different investment types
+# Add docstrings and better names for variables
+# Comment SQL code
+# Multiple databases
+# SQL aliases?
 
 import sqlite3 as sqlite
 import os
@@ -21,58 +24,93 @@ from tabulate import tabulate
 
 
 class Portfolio:
-    """Functions for the Port-Folio application."""
+    """Functions for the Port-Folio command line application."""
 
     def __init__(self):
-        self.db = sqlite.connect("my-test.db")
+        self.db = sqlite.connect("data.db")
         self.create_positions_sql_table()
         self.create_prices_sql_table()
 
     def create_positions_sql_table(self):
-        """Create an SQLite table if it does not already exist."""
+        """Create an SQLite table for positions if it does not already exist."""
 
         self.db.execute(
             """
-            CREATE TABLE IF NOT EXISTS POSITIONS (
-                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                holding TEXT,
-                quantity FLOAT,
-                buy_price FLOAT
-            );
+                CREATE TABLE IF NOT EXISTS POSITIONS (
+                    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    holding TEXT,
+                    quantity FLOAT,
+                    buy_price FLOAT
+                );
             """
         )
 
     def create_prices_sql_table(self):
-        """Create an SQLite table if it does not already exist."""
+        """Create an SQLite table for prices if it does not already exist."""
 
         self.db.execute(
             """
-            CREATE TABLE IF NOT EXISTS PRICES (
-                holding TEXT,
-                current_price FLOAT
-            );
+                CREATE TABLE IF NOT EXISTS PRICES (
+                    holding TEXT,
+                    current_price FLOAT
+                );
             """
         )
 
     def create_position(self, holding, quantity, price):
-        """_summary_"""
+        """Create an entry in the positions table based on user inputs."""
+
         self.db.execute(
-            f"INSERT INTO POSITIONS (holding, quantity, buy_price) VALUES ('{holding}', {quantity:.2f}, {price:.2f});"
+            f"""
+                INSERT INTO POSITIONS (holding, quantity, buy_price) 
+                    VALUES ('{holding}', {quantity:.2f}, {price:.2f});
+            """
         )
+
         self.db.commit()
 
-    def remove_position(self, list_number):
-        """This is a test."""
+    def remove_position(self, level_2_option, level_3_option):
+        """Remove a holding position entry."""
+
+        # Removes a transaction from the POSITIONS table based on an index
         self.db.execute(
-            f"DELETE FROM POSITIONS WHERE id = (SELECT id FROM POSITIONS LIMIT 1 OFFSET {list_number-1});"
+            f"""
+                DELETE FROM POSITIONS WHERE id = (
+                SELECT id FROM (
+                SELECT id from POSITIONS WHERE holding = (
+                SELECT holding FROM POSITIONS GROUP BY holding LIMIT 1 OFFSET {int(level_2_option)-1}))
+                LIMIT 1 OFFSET {int(level_3_option)-1});
+            """
         )
+
+        # If there is a holding entry in the PRICES table that is not in the
+        # POSITIONS table then it will be deleted
         self.db.execute(
             "DELETE FROM PRICES WHERE holding NOT IN (SELECT holding FROM POSITIONS);"
         )
         self.db.commit()
 
+    def remove_all_positions(self, level_2_option):
+        """Delete all positions for a holding."""
+
+        # Removes a transaction from the POSITIONS table based on an index
+        self.db.execute(
+            f"""
+                DELETE FROM POSITIONS WHERE holding = (
+                SELECT holding FROM POSITIONS GROUP BY holding LIMIT 1 OFFSET {int(level_2_option)-1});
+            """
+        )
+
+        # If there is a holding entry in the PRICES table that is not in the
+        # POSITIONS table then it will be deleted
+        self.db.execute(
+            "DELETE FROM PRICES WHERE holding NOT IN (SELECT holding FROM POSITIONS);"
+        )
+
+        self.db.commit()
+
     def create_current_price(self, holding, current_price):
-        """_summary_"""
+        """Create a price entry."""
 
         data = self.db.execute(
             f"""SELECT holding FROM PRICES WHERE holding = '{holding}'"""
@@ -89,8 +127,50 @@ class Portfolio:
 
         self.db.commit()
 
+    def update_position_quantity(self, level_2_option, level_3_option, quantity):
+        """Updates the quantity of a selected position."""
+
+        self.db.execute(
+            f"""
+                UPDATE POSITIONS SET quantity = {quantity:.2f} WHERE id = (
+                SELECT id FROM (
+                SELECT id from POSITIONS WHERE holding = (
+                SELECT holding FROM POSITIONS GROUP BY holding LIMIT 1 OFFSET {int(level_2_option)-1}))
+                LIMIT 1 OFFSET {int(level_3_option)-1});
+            """
+        )
+
+        self.db.commit()
+
+    def update_position_buy_price(self, level_2_option, level_3_option, buy_price):
+        """Updates the buy price of a selected position."""
+        self.db.execute(
+            f"""
+                UPDATE POSITIONS SET buy_price = {buy_price:.2f} WHERE id = (
+                SELECT id FROM (
+                SELECT id from POSITIONS WHERE holding = (
+                SELECT holding FROM POSITIONS GROUP BY holding LIMIT 1 OFFSET {int(level_2_option)-1}))
+                LIMIT 1 OFFSET {int(level_3_option)-1});
+            """
+        )
+
+        self.db.commit()
+
+    def update_holding_price(self, level_2_option, current_price):
+        """Update the price of a holding position."""
+
+        self.db.execute(
+            f"""
+                UPDATE PRICES SET current_price = {current_price:.2f} WHERE
+                holding = (SELECT holding FROM POSITIONS GROUP BY holding LIMIT 1 OFFSET {int(level_2_option)-1});
+            """
+        )
+
+        self.db.commit()
+
     def create_overview_as_table(self, sql_data):
-        """_summary_"""
+        """Generates a table summarising all holdings in the database."""
+
         formatted_data = []
         counter = 1
         for item in sql_data:
@@ -104,14 +184,15 @@ class Portfolio:
             row = (identifier, holding, quantity, current_price, value, _return)
             formatted_data.append(row)
             counter += 1
+
         return formatted_data
 
     def clear_terminal(self):
-        """_summary_"""
+        """Clears the terminal of text."""
         os.system("cls||clear")
 
     def print_overview_table(self):
-        """_summary_"""
+        """Print an overview of holdings."""
 
         col_names = [
             "ID",
@@ -167,11 +248,8 @@ class Portfolio:
         print()
 
     def create_single_holding_overview(self, sql_data):
-        """_summary_
+        """Create a table for a single holding."""
 
-        Args:
-            holding (_type_): _description_
-        """
         formatted_data = []
         counter = 1
         for item in sql_data:
@@ -182,10 +260,12 @@ class Portfolio:
             row = (identifier, quantity, buy_price, value)
             formatted_data.append(row)
             counter += 1
+
         return formatted_data
 
     def print_single_holding_overview(self, level_1_option):
-        """Test"""
+        """Print a table for a single holding."""
+
         data = self.db.execute(
             f"""
             SELECT quantity, buy_price, quantity*buy_price FROM POSITIONS WHERE holding = (
@@ -226,7 +306,7 @@ class Portfolio:
         print(f"Current Price: $ {data:.2f}")
 
     def start(self):
-        """Test"""
+        """Start applications running."""
 
         while True:
 
@@ -242,35 +322,59 @@ class Portfolio:
               \___________________/                          
                 """
             )
-            print("Version 0.2")
+            print("Version 0.3")
 
             self.print_overview_table()
 
             print("[a] Add Holding")
             print("[b] Remove Holding")
             print("[c] Update Holding")
-            print("[d] Exit")
+            print("[d] Update Price")
+            print("[e] Exit")
 
             print()
 
             level_1_option = input("Enter an option: ")
 
-            if level_1_option == "d":
+            if level_1_option == "e":
                 self.db.close()
                 break
-            elif level_1_option == "b":
-                holding = input("Which holding?: ")
+            elif level_1_option == "b":  # Remove holding
+                level_2_option = input("Which holding?: ")
                 self.clear_terminal()
-                self.print_single_holding_overview(holding)
-                level_2_option = input("Which would you like to delete? ")
-                self.remove_position(int(level_2_option))
-                # self.remove_price(int(level_2_option))
+                self.print_single_holding_overview(level_2_option)
+                print("[a] Delete all")
+                level_3_option = input("What would you like to delete? ")
+                if level_3_option == "a":
+                    self.remove_all_positions(level_2_option)
+                else:
+                    self.remove_position(int(level_2_option), int(level_3_option))
 
-            elif level_1_option == "c":
-                print("test")
-                while True:
-                    ...
-            elif level_1_option == "a":
+            elif level_1_option == "c":  # Update holding
+                level_2_option = input("Which holding?: ")
+                self.clear_terminal()
+                self.print_single_holding_overview(level_2_option)
+                level_3_option = input("What would you like to update? ")
+                print("[a] Quantity")
+                print("[b] Buy Price")
+                level_4_option = input("Which would you like to update? ")
+                if level_4_option == "a":
+                    quantity = input("Quantity: ")
+                    self.update_position_quantity(
+                        level_2_option, level_3_option, float(quantity)
+                    )
+                elif level_4_option == "b":
+                    buy_price = input("Buy Price: ")
+                    self.update_position_buy_price(
+                        level_2_option, level_3_option, float(buy_price)
+                    )
+
+            elif level_1_option == "d":  # Update price
+                level_2_option = input("Which holding?: ")
+                current_price = input("Current Price: ")
+                self.update_holding_price(level_2_option, float(current_price))
+
+            elif level_1_option == "a":  # Add holding
                 holding = input("Name: ")
                 quantity = input("Quantity: ")
                 buy_price = input("Buy Price: ")
