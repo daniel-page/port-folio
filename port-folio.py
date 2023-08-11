@@ -21,6 +21,14 @@ A command line application for tracking investments.
 import sqlite3 as sqlite
 import os
 from tabulate import tabulate
+import logging
+
+logging.basicConfig(
+    filename="app.log",
+    filemode="w",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.DEBUG,
+)
 
 
 class Portfolio:
@@ -305,99 +313,112 @@ class Portfolio:
 
         print(f"Current Price: $ {data:.2f}")
 
+    def print_banner(self):
+        """Print program name and logo in ASCII"""
+        line_1 = "                    |    |    |                        "
+        line_2 = "                   )_)  )_)  )_)                       "
+        line_3 = "  _  _  _ ___     )___))___))___)       __ _    ___ _  "
+        line_4 = " |_)/ \|_) |     )____)____)_____)     |_ / \|   | / \ "
+        line_5 = " |  \_/| \ |  _____|____|____|_______  |  \_/|___|_\_/ "
+        line_6 = "               \___________________/                   "
+
+        lines = [line_1, line_2, line_3, line_4, line_5, line_6]
+
+        for line in lines:
+            print(line)
+
     def start(self):
         """Start applications running."""
 
         while True:
 
-            self.clear_terminal()
-
-            print(
-                """      
-                   |    |    |                 
-                  )_)  )_)  )_)              
- _  _  _ ___     )___))___))___)       __ _    ___ _ 
-|_)/ \|_) |     )____)____)_____)     |_ / \|   | / \\     
-|  \_/| \ |  _____|____|____|_______  |  \_/|___|_\_/  
-              \___________________/                          
-                """
-            )
-            print("Version 0.3")
-
-            self.print_overview_table()
-
-            print("[a] Add Holding")
-            print("[b] Remove Holding")
-            print("[c] Update Holding")
-            print("[d] Update Price")
-            print("[e] Exit")
-
-            print()
-
-            level_1_option = input("Enter an option: ").strip()
-
-            if level_1_option == "e":
-                self.db.close()
-                break
-            elif level_1_option == "b":  # Remove holding
-                level_2_option = input("Which holding?: ").strip()
+            try:
                 self.clear_terminal()
-                self.print_single_holding_overview(level_2_option)
-                print("[a] Delete all")
-                level_3_option = input("What would you like to delete? ").strip()
-                if level_3_option == "a":
-                    self.remove_all_positions(level_2_option)
-                else:
-                    self.remove_position(int(level_2_option), int(level_3_option))
 
-            elif level_1_option == "c":  # Update holding
-                level_2_option = input("Which holding?: ").strip()
-                self.clear_terminal()
-                self.print_single_holding_overview(level_2_option)
-                level_3_option = input("What would you like to update? ").strip()
-                print("[a] Quantity")
-                print("[b] Buy Price")
-                level_4_option = input("Which would you like to update? ").strip()
-                if level_4_option == "a":
-                    quantity = input("Quantity: ").strip()
-                    self.update_position_quantity(
-                        level_2_option, level_3_option, float(quantity)
-                    )
-                elif level_4_option == "b":
-                    buy_price = input("Buy Price: ")
-                    self.update_position_buy_price(
-                        level_2_option, level_3_option, float(buy_price)
-                    )
+                self.print_banner()
+                print("Version 0.4")
 
-            elif level_1_option == "d":  # Update price
-                level_2_option = input("Which holding?: ").strip()
-                current_price = input("Current Price: ").strip()
-                self.update_holding_price(level_2_option, float(current_price))
+                self.print_overview_table()
 
-            elif level_1_option == "a":  # Add holding
-                holding = input("Name: ").strip()
-                quantity = input("Quantity: ").strip()
-                buy_price = input("Buy Price: ").strip()
-                current_price = input("Current Price: ").strip()
+                print("[a] Add Holding")
+                print("[b] Remove Holding")
+                print("[c] Update Holding")
+                print("[d] Update Price")
+                print("[e] Exit")
 
-                self.create_position(holding, float(quantity), float(buy_price))
-                # Check that the floats in the line above are necessary
+                print()
 
-                self.create_current_price(holding, float(current_price))
+                level_1_option = input("Enter an option: ").strip()
 
-            else:
-
-                while True:
+                if level_1_option == "e":
+                    self.db.close()
+                    break
+                elif level_1_option == "b":  # Remove holding
+                    level_2_option = input("Which holding? ").strip()
                     self.clear_terminal()
+                    self.print_single_holding_overview(level_2_option)
                     print()
+                    print("[a] Delete all")
+                    print("[b] Back")
+                    print()
+                    level_3_option = input("What would you like to delete? ").strip()
+                    if level_3_option == "a":
+                        self.remove_all_positions(level_2_option)
+                    else:
+                        self.remove_position(int(level_2_option), int(level_3_option))
 
-                    self.print_single_holding_overview(level_1_option)
+                elif level_1_option == "c":  # Update holding
+                    level_2_option = input("Which holding? ").strip()
+                    self.clear_terminal()
+                    self.print_single_holding_overview(level_2_option)
                     print()
-                    print("[a] Back")
-                    print()
-                    level_2_option = input("Enter an option: ").strip()
-                    if level_2_option == "a":
-                        break
+                    level_3_option = input("What would you like to update? ").strip()
+                    print("[a] Quantity")
+                    print("[b] Buy Price")
+                    level_4_option = input("Which would you like to update? ").strip()
+                    if level_4_option == "a":
+                        quantity = input("Quantity: ").strip()
+                        self.update_position_quantity(
+                            level_2_option, level_3_option, float(quantity)
+                        )
+                    elif level_4_option == "b":
+                        buy_price = input("Buy Price: ")
+                        self.update_position_buy_price(
+                            level_2_option, level_3_option, float(buy_price)
+                        )
+
+                elif level_1_option == "d":  # Update price
+                    level_2_option = input("Which holding? ").strip()
+                    current_price = input("Current Price: ").strip()
+                    self.update_holding_price(level_2_option, float(current_price))
+
+                elif level_1_option == "a":  # Add holding
+                    holding = input("Name: ").strip()
+                    quantity = input("Quantity: ").strip()
+                    buy_price = input("Buy Price: ").strip()
+                    current_price = input("Current Price: ").strip()
+
+                    self.create_position(holding, float(quantity), float(buy_price))
+                    # Check that the floats in the line above are necessary
+
+                    self.create_current_price(holding, float(current_price))
+
+                else:
+
+                    while True:
+                        self.clear_terminal()
+                        print()
+
+                        self.print_single_holding_overview(level_1_option)
+                        print()
+                        print("[a] Back")
+                        print()
+                        level_2_option = input("Enter an option: ").strip()
+                        if level_2_option == "a":
+                            break
+
+            except Exception:
+                logging.debug("Exception on main loop", exc_info=True)
 
 
 Portfolio().start()
