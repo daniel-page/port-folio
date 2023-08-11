@@ -334,32 +334,32 @@ class Portfolio:
 
             print()
 
-            level_1_option = input("Enter an option: ")
+            level_1_option = input("Enter an option: ").strip()
 
             if level_1_option == "e":
                 self.db.close()
                 break
             elif level_1_option == "b":  # Remove holding
-                level_2_option = input("Which holding?: ")
+                level_2_option = input("Which holding?: ").strip()
                 self.clear_terminal()
                 self.print_single_holding_overview(level_2_option)
                 print("[a] Delete all")
-                level_3_option = input("What would you like to delete? ")
+                level_3_option = input("What would you like to delete? ").strip()
                 if level_3_option == "a":
                     self.remove_all_positions(level_2_option)
                 else:
                     self.remove_position(int(level_2_option), int(level_3_option))
 
             elif level_1_option == "c":  # Update holding
-                level_2_option = input("Which holding?: ")
+                level_2_option = input("Which holding?: ").strip()
                 self.clear_terminal()
                 self.print_single_holding_overview(level_2_option)
-                level_3_option = input("What would you like to update? ")
+                level_3_option = input("What would you like to update? ").strip()
                 print("[a] Quantity")
                 print("[b] Buy Price")
-                level_4_option = input("Which would you like to update? ")
+                level_4_option = input("Which would you like to update? ").strip()
                 if level_4_option == "a":
-                    quantity = input("Quantity: ")
+                    quantity = input("Quantity: ").strip()
                     self.update_position_quantity(
                         level_2_option, level_3_option, float(quantity)
                     )
@@ -370,15 +370,15 @@ class Portfolio:
                     )
 
             elif level_1_option == "d":  # Update price
-                level_2_option = input("Which holding?: ")
-                current_price = input("Current Price: ")
+                level_2_option = input("Which holding?: ").strip()
+                current_price = input("Current Price: ").strip()
                 self.update_holding_price(level_2_option, float(current_price))
 
             elif level_1_option == "a":  # Add holding
-                holding = input("Name: ")
-                quantity = input("Quantity: ")
-                buy_price = input("Buy Price: ")
-                current_price = input("Current Price: ")
+                holding = input("Name: ").strip()
+                quantity = input("Quantity: ").strip()
+                buy_price = input("Buy Price: ").strip()
+                current_price = input("Current Price: ").strip()
 
                 self.create_position(holding, float(quantity), float(buy_price))
                 # Check that the floats in the line above are necessary
@@ -395,7 +395,7 @@ class Portfolio:
                     print()
                     print("[a] Back")
                     print()
-                    level_2_option = input("Enter an option: ")
+                    level_2_option = input("Enter an option: ").strip()
                     if level_2_option == "a":
                         break
 
