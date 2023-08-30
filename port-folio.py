@@ -2,12 +2,13 @@
 
 Port-Folio
 
-A command line application for tracking investments.
+A command line application for tracking investments that uses SQLite.
 
 """
 
 # TODO:
 # Strip whitespace on text entry, if nothing is entered
+# Error handling, some indication whether error has occurred
 # Add dates to holdings
 # Add cost basis
 # List order
@@ -17,6 +18,12 @@ A command line application for tracking investments.
 # Comment SQL code
 # Multiple databases
 # SQL aliases?
+# Change naming holdings/positions
+# Update version
+# Add pogram logo
+# Commas for thousands
+# Remove tabulate dependency
+# Create a GUI application
 
 import sqlite3 as sqlite
 import os
